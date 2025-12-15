@@ -1,8 +1,15 @@
 from django.shortcuts import render, redirect
-from .models import Servico, Profissional, Agendamento
 from datetime import time
+from urllib.parse import quote
+
+from .models import (
+    Servico,
+    Profissional,
+    Agendamento,
+    Configuracao
+)
 from .utils import gerar_horarios
-from .models import Servico, Profissional, Agendamento
+
 
 def agendar(request):
     servicos = Servico.objects.all()
@@ -17,7 +24,9 @@ def agendar(request):
         inicio = time(9, 0)
         fim = time(18, 0)
 
-        todos_horarios = gerar_horarios(inicio, fim, servico.duracao)
+        todos_horarios = gerar_horarios(
+            inicio, fim, servico.duracao
+        )
 
         agendamentos = Agendamento.objects.filter(
             data=data,
@@ -36,7 +45,7 @@ def agendar(request):
         ]
 
     if request.method == 'POST' and 'agendar' in request.POST:
-        Agendamento.objects.create(
+        agendamento = Agendamento.objects.create(
             servico_id=request.POST['servico'],
             profissional_id=request.POST.get('profissional') or None,
             nome_cliente=request.POST['nome'],
@@ -44,6 +53,10 @@ def agendar(request):
             data=request.POST['data'],
             hora=request.POST['hora'],
         )
+
+        # ✅ SALVA NA SESSÃO
+        request.session['agendamento_id'] = agendamento.id
+
         return redirect('sucesso')
 
     return render(request, 'agendar.html', {
@@ -53,6 +66,31 @@ def agendar(request):
     })
 
 
-
 def sucesso(request):
-    return render(request, 'sucesso.html')
+    agendamento_id = request.session.get('agendamento_id')
+
+    if not agendamento_id:
+        return render(request, 'sucesso.html')
+
+    agendamento = Agendamento.objects.get(id=agendamento_id)
+    config = Configuracao.objects.first()
+
+    whatsapp_link = None
+
+    if config and config.whatsapp:
+        mensagem = (
+            f"Olá! Gostaria de confirmar meu agendamento:\n"
+            f"Nome: {agendamento.nome_cliente}\n"
+            f"Serviço: {agendamento.servico.nome}\n"
+            f"Data: {agendamento.data.strftime('%d/%m/%Y')}\n"
+            f"Horário: {agendamento.hora.strftime('%H:%M')}"
+        )
+
+        whatsapp_link = (
+            f"https://wa.me/{config.whatsapp}"
+            f"?text={quote(mensagem)}"
+        )
+
+    return render(request, 'sucesso.html', {
+        'whatsapp_link': whatsapp_link
+    })
