@@ -1,51 +1,118 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Agendamento</title>
-</head>
-<body>
-<h2>Agendar horário</h2>
+{% extends 'base.html' %}
+{% block title %}Agendar horário{% endblock %}
 
-<form method="post">
-    {% csrf_token %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
 
-    <input type="text" name="nome" placeholder="Seu nome" required value="{{ request.POST.nome }}"><br><br>
-    <input type="text" name="telefone" placeholder="Telefone" required value="{{ request.POST.telefone }}"><br><br>
+        <div class="card shadow-sm">
+            <div class="card-body">
 
-    <select name="servico" required>
-        {% for s in servicos %}
-            <option value="{{ s.id }}" {% if request.POST.servico == s.id|stringformat:"s" %}selected{% endif %}>{{ s.nome }}</option>
-        {% endfor %}
-    </select><br><br>
+                <h4 class="text-center mb-4">Agendar horário</h4>
 
-    <select name="profissional">
-        <option value="">Qualquer profissional</option>
-        {% for p in profissionais %}
-            <option value="{{ p.id }}" {% if request.POST.profissional == p.id|stringformat:"s" %}selected{% endif %}>{{ p.nome }}</option>
-        {% endfor %}
-    </select><br><br>
+                <!-- FORM 1 — BUSCAR HORÁRIOS -->
+                <form method="post">
+                    {% csrf_token %}
 
-    <input type="date" name="data" required value="{{ request.POST.data }}"><br><br>
+                    <div class="mb-3">
+                        <label class="form-label">Nome</label>
+                        <input type="text"
+                               name="nome"
+                               class="form-control"
+                               required
+                               value="{{ request.POST.nome }}">
+                    </div>
 
-    <button type="submit" name="buscar">Buscar horários</button>
-</form>
+                    <div class="mb-3">
+                        <label class="form-label">Telefone</label>
+                        <input type="text"
+                               name="telefone"
+                               class="form-control"
+                               required
+                               value="{{ request.POST.telefone }}">
+                    </div>
 
-{% if horarios %}
-<form method="post">
-    {% csrf_token %}
-    <input type="hidden" name="nome" value="{{ request.POST.nome }}">
-    <input type="hidden" name="telefone" value="{{ request.POST.telefone }}">
-    <input type="hidden" name="servico" value="{{ request.POST.servico }}">
-    <input type="hidden" name="profissional" value="{{ request.POST.profissional }}">
-    <input type="hidden" name="data" value="{{ request.POST.data }}">
+                    <div class="mb-3">
+                        <label class="form-label">Serviço</label>
+                        <select name="servico" class="form-select" required>
+                            {% for s in servicos %}
+                                <option value="{{ s.id }}"
+                                    {% if request.POST.servico == s.id|stringformat:"s" %}
+                                        selected
+                                    {% endif %}>
+                                    {{ s.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-    <br><br>
-    <select name="hora" required>
-        {% for h in horarios %}
-            <option value="{{ h|time:"H:i" }}">{{ h|time:"H:i" }}</option>
-        {% endfor %}
-    </select><br><br>
+                    <div class="mb-3">
+                        <label class="form-label">Profissional</label>
+                        <select name="profissional" class="form-select">
+                            <option value="">Qualquer profissional</option>
+                            {% for p in profissionais %}
+                                <option value="{{ p.id }}"
+                                    {% if request.POST.profissional == p.id|stringformat:"s" %}
+                                        selected
+                                    {% endif %}>
+                                    {{ p.nome }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
 
-    <button type="submit" name="agendar">Confirmar agendamento</button>
-</form>
-{% endif %}
+                    <div class="mb-3">
+                        <label class="form-label">Data</label>
+                        <input type="date"
+                               name="data"
+                               class="form-control"
+                               required
+                               value="{{ request.POST.data }}">
+                    </div>
+
+                    <button type="submit"
+                            name="buscar"
+                            class="btn btn-primary w-100">
+                        Buscar horários
+                    </button>
+                </form>
+
+                <!-- FORM 2 — CONFIRMAR AGENDAMENTO -->
+                {% if horarios %}
+                    <hr>
+
+                    <form method="post">
+                        {% csrf_token %}
+
+                        <!-- Campos ocultos para manter os dados -->
+                        <input type="hidden" name="nome" value="{{ request.POST.nome }}">
+                        <input type="hidden" name="telefone" value="{{ request.POST.telefone }}">
+                        <input type="hidden" name="servico" value="{{ request.POST.servico }}">
+                        <input type="hidden" name="profissional" value="{{ request.POST.profissional }}">
+                        <input type="hidden" name="data" value="{{ request.POST.data }}">
+
+                        <div class="mb-3">
+                            <label class="form-label">Horário disponível</label>
+                            <select name="hora" class="form-select" required>
+                                {% for h in horarios %}
+                                    <option value="{{ h|time:'H:i' }}">
+                                        {{ h|time:'H:i' }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+
+                        <button type="submit"
+                                name="agendar"
+                                class="btn btn-success w-100">
+                            Confirmar agendamento
+                        </button>
+                    </form>
+                {% endif %}
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
