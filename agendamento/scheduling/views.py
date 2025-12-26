@@ -78,12 +78,13 @@ def sucesso(request):
     whatsapp_link = None
 
     if config and config.whatsapp:
-        mensagem = (
-            f"Olá! Gostaria de confirmar meu agendamento:\n"
-            f"Nome: {agendamento.nome_cliente}\n"
-            f"Serviço: {agendamento.servico.nome}\n"
-            f"Data: {agendamento.data.strftime('%d/%m/%Y')}\n"
-            f"Horário: {agendamento.hora.strftime('%H:%M')}"
+        mensagem_base = config.mensagem_whatsapp
+
+        mensagem = mensagem_base.format(
+            nome=agendamento.nome_cliente,
+            servico=agendamento.servico.nome,
+            data=agendamento.data.strftime('%d/%m/%Y'),
+            hora=agendamento.hora.strftime('%H:%M'),
         )
 
         whatsapp_link = (

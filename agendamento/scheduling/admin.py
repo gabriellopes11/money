@@ -1,21 +1,17 @@
 from django.contrib import admin
 from .models import Servico, Profissional, Agendamento, Configuracao
 
-@admin.register(Configuracao)
-class ConfiguracaoAdmin(admin.ModelAdmin):
-    list_display = ('nome_negocio', 'whatsapp')
-
-    def has_add_permission(self, request):
-        return not Configuracao.objects.exists()
 
 @admin.register(Servico)
 class ServicoAdmin(admin.ModelAdmin):
     list_display = ('nome', 'duracao', 'preco')
+    search_fields = ('nome',)
 
 
 @admin.register(Profissional)
 class ProfissionalAdmin(admin.ModelAdmin):
     list_display = ('nome',)
+    search_fields = ('nome',)
 
 
 @admin.register(Agendamento)
@@ -23,8 +19,24 @@ class AgendamentoAdmin(admin.ModelAdmin):
     list_display = (
         'nome_cliente',
         'servico',
+        'profissional',
         'data',
         'hora',
-        'status'
+        'status',
     )
     list_filter = ('status', 'data')
+    search_fields = ('nome_cliente', 'telefone')
+
+
+@admin.register(Configuracao)
+class ConfiguracaoAdmin(admin.ModelAdmin):
+    list_display = ('nome_negocio', 'whatsapp')
+
+    fields = (
+        'nome_negocio',
+        'whatsapp',
+        'mensagem_whatsapp',
+    )
+
+    def has_add_permission(self, request):
+        return not Configuracao.objects.exists()

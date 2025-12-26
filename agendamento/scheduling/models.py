@@ -61,10 +61,31 @@ class Agendamento(models.Model):
 
 
 class Configuracao(models.Model):
-    """
-    Configuração global do sistema.
-    Deve existir apenas UM registro.
-    """
+    nome_negocio = models.CharField(
+        max_length=100,
+        default="Sistema de Agendamento"
+    )
+
+    whatsapp = models.CharField(
+        max_length=20,
+        help_text="Formato: 55DDDNUMERO (ex: 5511999999999)"
+    )
+
+    mensagem_whatsapp = models.TextField(
+        default=(
+            "Olá {nome}, gostaria de confirmar meu agendamento:\n"
+            "Serviço: {servico}\n"
+            "Data: {data}\n"
+            "Horário: {hora}"
+        ),
+        help_text=(
+            "Use as variáveis: {nome}, {servico}, {data}, {hora}"
+        )
+    )
+
+    def __str__(self):
+        return "Configuração do Sistema"
+
 
     nome_negocio = models.CharField(
         max_length=100,
