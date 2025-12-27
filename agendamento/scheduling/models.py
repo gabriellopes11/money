@@ -86,15 +86,37 @@ class Configuracao(models.Model):
     def __str__(self):
         return "Configuração do Sistema"
 
+class HorarioFuncionamento(models.Model):
+    DIAS_SEMANA = (
+        (0, 'Segunda'),
+        (1, 'Terça'),
+        (2, 'Quarta'),
+        (3, 'Quinta'),
+        (4, 'Sexta'),
+        (5, 'Sábado'),
+        (6, 'Domingo'),
+    )
 
-    nome_negocio = models.CharField(
-        max_length=100,
-        default="Sistema de Agendamento"
+    dia_semana = models.IntegerField(
+        choices=DIAS_SEMANA
     )
-    whatsapp = models.CharField(
-        max_length=20,
-        help_text="Formato: 55DDDNUMERO (ex: 5511999999999)"
+    abertura = models.TimeField()
+    fechamento = models.TimeField()
+
+    intervalo_inicio = models.TimeField(
+        null=True,
+        blank=True
     )
+    intervalo_fim = models.TimeField(
+        null=True,
+        blank=True
+    )
+
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        unique_together = ('dia_semana',)
+        ordering = ['dia_semana']
 
     def __str__(self):
-        return "Configuração do Sistema"
+        return dict(self.DIAS_SEMANA).get(self.dia_semana)

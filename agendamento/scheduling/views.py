@@ -1,14 +1,14 @@
 from django.shortcuts import render, redirect
-from datetime import time
+from datetime import datetime, time
 from urllib.parse import quote
 
 from .models import (
     Servico,
     Profissional,
     Agendamento,
-    Configuracao
+    Configuracao,
 )
-from .utils import gerar_horarios
+from .utils import gerar_horarios, filtrar_por_funcionamento
 
 
 def agendar(request):
@@ -18,16 +18,32 @@ def agendar(request):
 
     if request.method == 'POST' and 'buscar' in request.POST:
         servico = Servico.objects.get(id=request.POST['servico'])
-        data = request.POST['data']
         profissional_id = request.POST.get('profissional')
 
-        inicio = time(9, 0)
-        fim = time(18, 0)
+        # ✅ string → date
+        data = datetime.strptime(
+            request.POST['data'],
+            '%Y-%m-%d'
+        ).date()
 
+        # horário base (será filtrado depois)
+        inicio = time(0, 0)
+        fim = time(23, 59)
+
+        # gera horários conforme duração do serviço
         todos_horarios = gerar_horarios(
-            inicio, fim, servico.duracao
+            inicio,
+            fim,
+            servico.duracao
         )
 
+        # ✅ filtra pelo horário de funcionamento
+        todos_horarios = filtrar_por_funcionamento(
+            data,
+            todos_horarios
+        )
+
+        # agendamentos existentes
         agendamentos = Agendamento.objects.filter(
             data=data,
             status__in=['pendente', 'confirmado']
@@ -45,16 +61,21 @@ def agendar(request):
         ]
 
     if request.method == 'POST' and 'agendar' in request.POST:
+        hora = datetime.strptime(
+            request.POST['hora'],
+            '%H:%M'
+        ).time()
+
         agendamento = Agendamento.objects.create(
             servico_id=request.POST['servico'],
             profissional_id=request.POST.get('profissional') or None,
             nome_cliente=request.POST['nome'],
             telefone=request.POST['telefone'],
             data=request.POST['data'],
-            hora=request.POST['hora'],
+            hora=hora,
         )
 
-        # ✅ SALVA NA SESSÃO
+        # salva na sessão
         request.session['agendamento_id'] = agendamento.id
 
         return redirect('sucesso')
@@ -77,10 +98,8 @@ def sucesso(request):
 
     whatsapp_link = None
 
-    if config and config.whatsapp:
-        mensagem_base = config.mensagem_whatsapp
-
-        mensagem = mensagem_base.format(
+    if config and config.whatsapp and config.mensagem_whatsapp:
+        mensagem = config.mensagem_whatsapp.format(
             nome=agendamento.nome_cliente,
             servico=agendamento.servico.nome,
             data=agendamento.data.strftime('%d/%m/%Y'),
