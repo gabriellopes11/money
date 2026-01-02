@@ -16,17 +16,24 @@ def agendar(request):
     profissionais = Profissional.objects.all()
     horarios_disponiveis = []
 
+    # =============================
+    # BUSCAR HORÁRIOS DISPONÍVEIS
+    # =============================
     if request.method == 'POST' and 'buscar' in request.POST:
         servico = Servico.objects.get(id=request.POST['servico'])
         profissional_id = request.POST.get('profissional')
 
-        # ✅ string → date
+        profissional = None
+        if profissional_id:
+            profissional = Profissional.objects.get(id=profissional_id)
+
+        # string → date
         data = datetime.strptime(
             request.POST['data'],
             '%Y-%m-%d'
         ).date()
 
-        # horário base (será filtrado depois)
+        # faixa base (filtrada depois pelo funcionamento)
         inicio = time(0, 0)
         fim = time(23, 59)
 
@@ -37,10 +44,11 @@ def agendar(request):
             servico.duracao
         )
 
-        # ✅ filtra pelo horário de funcionamento
+        # filtra pelo horário de funcionamento
         todos_horarios = filtrar_por_funcionamento(
             data,
-            todos_horarios
+            todos_horarios,
+            profissional
         )
 
         # agendamentos existentes
@@ -49,17 +57,21 @@ def agendar(request):
             status__in=['pendente', 'confirmado']
         )
 
-        if profissional_id:
+        if profissional:
             agendamentos = agendamentos.filter(
-                profissional_id=profissional_id
+                profissional=profissional
             )
 
         ocupados = [a.hora for a in agendamentos]
 
+        # remove horários ocupados
         horarios_disponiveis = [
             h for h in todos_horarios if h not in ocupados
         ]
 
+    # =============================
+    # CRIAR AGENDAMENTO
+    # =============================
     if request.method == 'POST' and 'agendar' in request.POST:
         hora = datetime.strptime(
             request.POST['hora'],

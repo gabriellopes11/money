@@ -7,6 +7,7 @@ def gerar_horarios(inicio, fim, duracao):
     com intervalo baseado na duração do serviço.
     """
     horarios = []
+
     atual = datetime.combine(datetime.today(), inicio)
     limite = datetime.combine(datetime.today(), fim)
 
@@ -17,23 +18,35 @@ def gerar_horarios(inicio, fim, duracao):
     return horarios
 
 
-def filtrar_por_funcionamento(data, horarios):
+def filtrar_por_funcionamento(data, horarios, profissional=None):
     """
-    Filtra horários com base no horário de funcionamento
-    configurado no sistema.
+    Filtra horários com base:
+    1️⃣ no horário do profissional (se existir)
+    2️⃣ no horário global (fallback)
     """
-    from .models import HorarioFuncionamento
+    from .models import HorarioFuncionamento, HorarioProfissional
 
-    dia_semana = data.weekday()  # 0 = segunda
+    dia_semana = data.weekday()  # 0 = segunda-feira
 
-    try:
-        funcionamento = HorarioFuncionamento.objects.get(
-            dia_semana=dia_semana
-        )
-    except HorarioFuncionamento.DoesNotExist:
-        return []
+    funcionamento = None
 
-    if not funcionamento.ativo:
+    # 🔥 1. Tenta buscar horário do profissional
+    if profissional:
+        funcionamento = HorarioProfissional.objects.filter(
+            profissional=profissional,
+            dia_semana=dia_semana,
+            ativo=True
+        ).first()
+
+    # 🔁 2. Fallback: horário global
+    if not funcionamento:
+        funcionamento = HorarioFuncionamento.objects.filter(
+            dia_semana=dia_semana,
+            ativo=True
+        ).first()
+
+    # ❌ Nenhum horário configurado
+    if not funcionamento:
         return []
 
     horarios_filtrados = []
@@ -41,7 +54,7 @@ def filtrar_por_funcionamento(data, horarios):
     for h in horarios:
         if funcionamento.abertura <= h < funcionamento.fechamento:
 
-            # Intervalo (almoço, pausa, etc)
+            # ⛔ Intervalo (almoço / pausa)
             if (
                 funcionamento.intervalo_inicio
                 and funcionamento.intervalo_fim

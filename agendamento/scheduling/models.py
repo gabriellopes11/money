@@ -57,7 +57,11 @@ class Agendamento(models.Model):
     )
 
     def __str__(self):
-        return f"{self.nome_cliente} - {self.data.strftime('%d/%m/%Y')} {self.hora.strftime('%H:%M')}"
+        return (
+            f"{self.nome_cliente} - "
+            f"{self.data.strftime('%d/%m/%Y')} "
+            f"{self.hora.strftime('%H:%M')}"
+        )
 
 
 class Configuracao(models.Model):
@@ -86,6 +90,8 @@ class Configuracao(models.Model):
     def __str__(self):
         return "Configuração do Sistema"
 
+
+# 🔹 HORÁRIO GLOBAL (OPCIONAL / FALLBACK)
 class HorarioFuncionamento(models.Model):
     DIAS_SEMANA = (
         (0, 'Segunda'),
@@ -97,6 +103,48 @@ class HorarioFuncionamento(models.Model):
         (6, 'Domingo'),
     )
 
+    dia_semana = models.IntegerField(
+        choices=DIAS_SEMANA,
+        unique=True
+    )
+    abertura = models.TimeField()
+    fechamento = models.TimeField()
+
+    intervalo_inicio = models.TimeField(
+        null=True,
+        blank=True
+    )
+    intervalo_fim = models.TimeField(
+        null=True,
+        blank=True
+    )
+
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        ordering = ['dia_semana']
+
+    def __str__(self):
+        return dict(self.DIAS_SEMANA).get(self.dia_semana)
+
+
+# 🔥 NOVO: HORÁRIO POR PROFISSIONAL
+class HorarioProfissional(models.Model):
+    DIAS_SEMANA = (
+        (0, 'Segunda'),
+        (1, 'Terça'),
+        (2, 'Quarta'),
+        (3, 'Quinta'),
+        (4, 'Sexta'),
+        (5, 'Sábado'),
+        (6, 'Domingo'),
+    )
+
+    profissional = models.ForeignKey(
+        Profissional,
+        on_delete=models.CASCADE,
+        related_name='horarios'
+    )
     dia_semana = models.IntegerField(
         choices=DIAS_SEMANA
     )
@@ -115,8 +163,13 @@ class HorarioFuncionamento(models.Model):
     ativo = models.BooleanField(default=True)
 
     class Meta:
-        unique_together = ('dia_semana',)
-        ordering = ['dia_semana']
+        unique_together = ('profissional', 'dia_semana')
+        ordering = ['profissional', 'dia_semana']
+        verbose_name = 'Horário do Profissional'
+        verbose_name_plural = 'Horários dos Profissionais'
 
     def __str__(self):
-        return dict(self.DIAS_SEMANA).get(self.dia_semana)
+        return (
+            f"{self.profissional.nome} - "
+            f"{dict(self.DIAS_SEMANA).get(self.dia_semana)}"
+        )
